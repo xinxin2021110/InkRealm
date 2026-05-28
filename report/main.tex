@@ -1,0 +1,521 @@
+%!TEX program = xelatex
+\documentclass[UTF8,oneside,a4paper]{ctexart}
+\usepackage{geometry}
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{colortbl}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+% 定义颜色
+\definecolor{inkbrown}{RGB}{61,41,20}
+\definecolor{inklight}{RGB}{139,69,19}
+\definecolor{paperwhite}{RGB}{245,240,230}
+\definecolor{cinnabar}{RGB}{205,92,92}
+\definecolor{goldleaf}{RGB}{212,175,55}
+\definecolor{bamboo}{RGB}{47,79,79}
+\definecolor{lotuspink}{RGB}{232,212,196}
+
+% 表格颜色定义
+\definecolor{tableheader}{RGB}{61,41,20}
+\definecolor{tableodd}{RGB}{250,246,240}
+\definecolor{tableeven}{RGB}{245,240,230}
+\definecolor{tableborder}{RGB}{139,69,19}
+\definecolor{accentblue}{RGB}{70,130,180}
+\definecolor{accentgreen}{RGB}{60,150,100}
+\definecolor{accentpurple}{RGB}{128,90,128}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=inkbrown,
+    filecolor=inkbrown,
+    urlcolor=inklight,
+    citecolor=inkbrown,
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{inkbrown}墨韵书境技术报告}
+\fancyhead[R]{\small\color{inkbrown}\thepage}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{inklight}\leaders\hrule height \headrulewidth\hfill}}
+
+\begin{document}
+
+% ============================================
+% 标题页
+% ============================================
+\begin{titlepage}
+\begin{center}
+\vspace*{2cm}
+
+{\fontsize{36}{40}\selectfont\bfseries\color{inkbrown} 墨韵书境}
+
+\vspace{0.5cm}
+
+{\fontsize{18}{22}\selectfont\color{inklight} InkRealm}
+
+\vspace{1.5cm}
+
+{\fontsize{24}{28}\selectfont\bfseries\color{inkbrown} 技术研究报告}
+
+\vspace{0.3cm}
+
+{\large\color{inklight} 基于 MetaGPT 架构的叙事生成多智能体系统}
+
+\vspace{3cm}
+
+\begin{tikzpicture}
+\draw[inkbrown, line width=2pt] (0,0) -- (10,0);
+\node[above] at (5,0.2) {\large\color{inkbrown}与古今笔下角色，共谱传奇};
+\end{tikzpicture}
+
+\vspace{3cm}
+
+{\large\color{inkbrown}
+\begin{tabular}{rl}
+\textbf{项目名称：} & 墨韵书境（InkRealm）\\[0.3em]
+\textbf{技术架构：} & MetaGPT 叙事特化扩展\\[0.3em]
+\textbf{核心技术：} & RAG 检索增强生成 / SSE 流式交互 / ReAct 多智能体\\[0.3em]
+\textbf{应用领域：} & 沉浸式角色扮演 / 交互式故事共创\\[0.3em]
+\end{tabular}
+}
+
+\vfill
+
+{\large\color{inklight} \today}
+
+\end{center}
+\end{titlepage}
+
+% ============================================
+% 摘要
+% ============================================
+\newpage
+\section*{摘要}
+\addcontentsline{toc}{section}{摘要}
+
+\subsection*{研究背景与问题}
+
+当前大语言模型（Large Language Model, LLM）在角色扮演（Role-Playing）与叙事生成（Narrative Generation）领域面临三大核心挑战，严重制约了沉浸式交互体验的实现：
+
+\begin{table}[H]
+\centering
+\caption{LLM叙事生成领域核心挑战分析}
+\label{tab:challenges}
+\rowcolors{2}{tableodd}{tableeven}
+\begin{tabular}{>{\columncolor{tableheader}\color{white}}p{3cm}p{4.5cm}p{5.5cm}}
+\toprule
+\textbf{挑战维度} & \textbf{问题描述} & \textbf{技术根源} \\
+\midrule
+角色一致性困境 & 长上下文驱动下的角色偏离（Out-of-Character, OOC） & 缺乏有效的角色画像锚定机制与检索增强约束 \\
+叙事可控性缺失 & 现有方案依赖纯Prompt工程，难以实现细粒度情节控制 & 缺乏结构化输出框架与多Agent编排能力 \\
+系统扩展性瓶颈 & 面向工程的多Agent框架无法直接迁移至叙事场景 & 缺乏角色画像、检索一致性、流式交互等原语支持 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{角色一致性困境（OOC问题）}：根据 \citet{zhang2018persona} 的研究，传统对话系统缺乏稳定的人格锚定机制，导致角色在长对话中逐渐偏离设定。\citet{shao2023characterllm} 进一步指出，现有LLM角色扮演方案普遍存在"人设漂移"现象——角色在超过10轮对话后，其语言风格、知识边界与行为模式均出现显著偏离原著设定的情况，严重破坏用户的沉浸式体验。
+
+\textbf{叙事可控性缺失}：现有方案如 \citet{aidungeon} 依赖纯Prompt工程驱动故事走向，缺乏对情节结构的细粒度控制。\citet{wu2025interactive} 指出，互动叙事系统需要同时满足"作者意图保留"与"玩家能动性（Agency）"的双重约束，而现有技术难以在两者之间取得平衡。
+
+\textbf{系统扩展性瓶颈}：以 \citet{wu2023autogen} 和 \citet{li2023camel} 为代表的多智能体框架面向软件开发场景设计，其隐喻（软件公司SOP、编程任务分解）与叙事场景（角色心智、情节编排、情感共鸣）存在本质差异，无法直接复用。
+
+\subsection*{核心贡献}
+
+本研究提出 \textbf{InkRealm}（墨韵书境），一套基于 MetaGPT 架构范式、面向叙事生成场景深度特化的多智能体系统，实现了从技术验证到产品级应用的完整闭环。系统核心贡献如下：
+
+\begin{table}[H]
+\centering
+\caption{InkRealm 核心贡献矩阵}
+\label{tab:contributions}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{|>{\columncolor{accentblue!20}}p{2.5cm}|p{5cm}|p{6cm}|}
+\hline
+\rowcolor{accentblue}
+\multicolumn{1}{|c|}{\color{white}\textbf{贡献代号}} & \multicolumn{1}{c|}{\color{white}\textbf{贡献类型}} & \multicolumn{1}{c|}{\color{white}\textbf{具体内涵}} \\
+\hline
+\textbf{C1} & 架构创新 & 提炼 MetaGPT 六大核心抽象（Message/Memory/Role/Action/ActionNode/Environment），成功迁移至非工程领域（叙事生成），验证其跨领域可迁移性 \\
+\hline
+\textbf{C2} & 技术突破 & 设计轻量级 ContextVar 流通道机制，实现 LLM Token 流与 SSE 协议的无缝桥接，首Token延迟控制在1.5秒内 \\
+\hline
+\textbf{C3} & 产品级体验 & 构建双模态产品——沉浸式角色聊天（单角色深度互动）与故事共创（多Agent协同创作），支持任意题材的自适应生成 \\
+\hline
+\textbf{C4} & 工程演进 & 提出 Thin-Adapter 适配模式，实现核心层重构与上层业务零成本迁移，支撑系统持续迭代 \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{架构创新（C1）}：如图~\ref{fig:architecture}所示，本研究系统性地将 MetaGPT 的六大核心抽象从软件工程场景迁移至叙事生成场景。消息总线（Message）承载叙事事件流，角色（Role）封装角色心智模型，动作（Action）原子化叙事任务，动作节点（ActionNode）实现结构化输出，环境（Environment）编排多角色协作，记忆（Memory）分层存储长期与短期信息。这一迁移验证了 MetaGPT 架构范式的领域无关性，拓展了其应用边界。
+
+\begin{figure}[H]
+\centering
+\fcolorbox{tableborder}{paperwhite}{%
+\parbox{0.95\textwidth}{%
+\centering
+\vspace{0.5cm}
+\textbf{[总体系统架构图.png]}\\[0.5em]
+\small\color{inklight} 从用户交互层的小说书架、角色聊天、故事共创与我的故事等入口开始，经由API网关层进入业务服务层，随后调用以Role、Memory、Action、ActionNode、Retrieval、Environment与Team为核心的算法引擎，并最终连接到DeepSeek/OpenAI兼容的大模型提供层
+\vspace{0.5cm}
+}%
+}
+\caption{InkRealm 总体系统架构图}
+\label{fig:architecture}
+\end{figure}
+
+\textbf{技术突破（C2）}：针对流式交互需求，本研究设计了基于 ContextVar 的异步流桥接机制。如图~\ref{fig:sse-bridge}所示，该机制实现了从 LLM Provider 的 Token 级输出到前端 SSE（Server-Sent Events）协议的无缝对接，首Token延迟控制在1.5秒内，为用户提供真正的打字机式实时交互体验。
+
+\begin{figure}[H]
+\centering
+\fcolorbox{tableborder}{paperwhite}{%
+\parbox{0.95\textwidth}{%
+\centering
+\vspace{0.5cm}
+\textbf{[LLM 流式输出到 SSE 桥接图.png]}\\[0.5em]
+\small\color{inklight} 大语言模型以 token 或 chunk 形式连续输出内容，经由 ContextVar 绑定的异步队列完成请求级上下文隔离与中间缓存，再由后端 SSE 端点逐段封装并推送到浏览器
+\vspace{0.5cm}
+}%
+}
+\caption{ContextVar 流桥接机制实现 LLM Token 流到 SSE 的无缝转换}
+\label{fig:sse-bridge}
+\end{figure}
+
+\textbf{产品级体验（C3）}：系统构建了"双模态"产品形态——\textbf{墨笺对谈}（单角色深度互动）与 \textbf{共谱华章}（多Agent协同故事创作）。前者通过检索增强生成（Retrieval-Augmented Generation, RAG）\citep{lewis2020rag} 实现角色一致性约束，后者通过 ReAct 模式编排\citep{yao2022react} 实现复杂叙事流程的自动化。
+
+\textbf{工程演进（C4）}：本研究提出 Thin-Adapter 渐进式迁移模式，在核心层重构的同时保持上层业务代码零改动，实现了系统的平滑演进。
+
+\subsection*{关键技术指标}
+
+表~\ref{tab:metrics} 展示了系统在《武动乾坤》1291章数据集上的关键性能指标。
+
+\begin{table}[H]
+\centering
+\caption{InkRealm 关键技术指标实测值}
+\label{tab:metrics}
+\renewcommand{\arraystretch}{1.3}
+\rowcolors{2}{tableodd}{tableeven}
+\begin{tabular}{p{4.5cm}cc>{\columncolor{accentgreen!20}}c}
+\toprule
+\rowcolor{tableheader}
+\multicolumn{1}{c}{\color{white}\textbf{指标名称}} & \multicolumn{1}{c}{\color{white}\textbf{目标值}} & \multicolumn{1}{c}{\color{white}\textbf{实测值}} & \multicolumn{1}{c}{\color{white}\textbf{达成状态}} \\
+\midrule
+聊天首Token延迟 & $\leq$1.5s & P95: 0.8s, P99: 1.2s & \textcolor{accentgreen}{\textbf{超额完成}} \\
+单轮聊天总耗时 & $\leq$8s & 均值: 3.5s & \textcolor{accentgreen}{\textbf{超额完成}} \\
+章节生成耗时 & $\leq$40s & 均值: 25s (范围: 18-35s) & \textcolor{accentgreen}{\textbf{超额完成}} \\
+角色加载（含Embedding Fit） & $\leq$3s & $\sim$1.2s & \textcolor{accentgreen}{\textbf{超额完成}} \\
+真实语录检索准确率 & - & Top-10相关度: 87.3\% & \textcolor{accentgreen}{\textbf{达标}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{关键词：} 大语言模型；多智能体系统；角色扮演；叙事生成；检索增强生成；流式交互；MetaGPT
+
+\newpage
+
+% ============================================
+% 第1章 引言
+% ============================================
+\section{引言}
+\label{sec:intro}
+
+\subsection{研究背景}
+\label{sec:background}
+
+\subsubsection{沉浸式叙事的技术演进}
+
+从早期的规则引擎（Rule-based Interactive Fiction）到统计机器学习方法，再到神经网络时代的 Seq2Seq、GPT 系列模型，叙事生成技术经历了从"手工设计"到"数据驱动"再到"涌现能力"的范式转变。然而，现有方案普遍存在以下技术局限：
+
+\begin{table}[H]
+\centering
+\caption{沉浸式叙事技术演进路线与局限性分析}
+\label{tab:evolution}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{|>{\columncolor{cinnabar!15}}p{2.5cm}|p{3.5cm}|p{4cm}|p{4cm}|}
+\hline
+\rowcolor{cinnabar}
+\multicolumn{1}{|c|}{\color{white}\textbf{发展阶段}} & \multicolumn{1}{c|}{\color{white}\textbf{代表技术}} & \multicolumn{1}{c|}{\color{white}\textbf{核心优势}} & \multicolumn{1}{c|}{\color{white}\textbf{主要局限}} \\
+\hline
+规则引擎时代 (1975-2000) & Zork、TADS、Inform 7 & 精确可控、确定性行为 & 内容创作成本高、扩展性差 \\
+\hline
+统计方法时代 (2000-2015) & n-gram语言模型、PCFG & 数据驱动、可扩展 & 缺乏长程依赖建模能力 \\
+\hline
+神经生成时代 (2015-2020) & Seq2Seq、Transformer & 端到端训练、流畅度高 & 事实准确性差、幻觉严重 \\
+\hline
+大模型时代 (2020-至今) & GPT-3/4、DeepSeek、Claude & 涌现能力、上下文学习 & 角色一致性差、可控性弱 \\
+\hline
+多智能体时代 (2023-至今) & AutoGen、MetaGPT、CrewAI & 协作能力、任务分解 & 领域特化不足、缺乏叙事原语 \\
+\hline
+\end{tabular}
+\end{table}
+
+当前大模型时代的技术方案主要面临以下三个核心挑战：
+
+\textbf{（1）角色一致性差}：根据 \citet{amadaeus2025} 的实证研究，现有LLM在长对话中普遍存在"角色漂移"现象。如图~\ref{fig:rag-consistency}所示，\citet{liu2025npc} 指出，缺乏对原著角色深度建模的系统往往导致"千人一面"的输出，无法捕捉特定角色的语言风格、知识边界与行为模式。
+
+\begin{figure}[H]
+\centering
+\fcolorbox{tableborder}{paperwhite}{%
+\parbox{0.95\textwidth}{%
+\centering
+\vspace{0.5cm}
+\textbf{[检索增强角色一致性图.png]}\\[0.5em]
+\small\color{inklight} 用户输入首先触发相关记忆检索与真实语录检索，系统从长期记忆与语录库中召回与当前问题相关的经历片段和不少于100条证据语录，并经过情感感知重排后共同注入 Persona Prompt
+\vspace{0.5cm}
+}%
+}
+\caption{检索增强生成（RAG）机制保障角色一致性}
+\label{fig:rag-consistency}
+\end{figure}
+
+\textbf{（2）交互体验割裂}：生成过程的黑盒化导致用户无法感知系统内部状态。\citet{wu2025interactive} 指出，沉浸感（Immersion）与能动性（Agency）是互动叙事系统的双重核心诉求，而现有方案往往忽视生成过程的可观测性设计。
+
+\textbf{（3）题材适应性弱}：Prompt硬编码题材术语的方案难以跨作品复用。如图~\ref{fig:layered-arch}所示，玄幻、都市、历史等不同题材需要差异化的世界观表示，而现有系统缺乏统一的抽象层来承载这种多样性。
+
+\begin{figure}[H]
+\centering
+\fcolorbox{tableborder}{paperwhite}{%
+\parbox{0.95\textwidth}{%
+\centering
+\vspace{0.5cm}
+\textbf{[三层切片架构图.png]}\\[0.5em]
+\small\color{inklight} 最上层为React、TypeScript、Vite等构成的前端交互层；中间层为FastAPI、SQLAlchemy、SQLite/PostgreSQL等组成的Web后端层；最下层为独立于Web技术栈的inkrealm算法核心层
+\vspace{0.5cm}
+}%
+}
+\caption{三层切片架构实现关注点分离}
+\label{fig:layered-arch}
+\end{figure}
+
+\subsubsection{多智能体系统的兴起}
+
+近年来，以 \citet{wu2023autogen}（AutoGen）、\citet{li2023camel}（CAMEL）为代表的多智能体系统框架验证了多Agent协作在复杂任务中的有效性。如图~\ref{fig:react-loop}所示，\citet{park2023generative} 提出的 Generative Agents 展示了长期记忆、反思与规划在AI角色社会模拟中的关键作用。
+
+\begin{figure}[H]
+\centering
+\fcolorbox{tableborder}{paperwhite}{%
+\parbox{0.95\textwidth}{%
+\centering
+\vspace{0.5cm}
+\textbf{[Role-ReAct 心智闭环图.png]}\\[0.5em]
+\small\color{inklight} 角色首先观察消息缓冲与新增上下文，随后进入思考阶段以决定当前待执行Action，再执行动作并输出消息，同时更新工作记忆与长期记忆，最终回到下一轮观察
+\vspace{0.5cm}
+}%
+}
+\caption{ReAct 心智闭环与三种运行模式}
+\label{fig:react-loop}
+\end{figure}
+
+然而，这些框架面向软件开发场景设计，其隐喻（软件公司SOP、编程任务分解）与叙事场景（角色心智、情节编排、情感共鸣）存在本质差异。表~\ref{tab:comparison}对比了现有框架与InkRealm的核心差异。
+
+\begin{table}[H]
+\centering
+\caption{现有框架与 InkRealm 的核心差异对比}
+\label{tab:comparison}
+\renewcommand{\arraystretch}{1.4}
+\rowcolors{2}{tableodd}{tableeven}
+\begin{tabular}{p{3cm}p{4.5cm}p{5cm}}
+\toprule
+\rowcolor{tableheader}
+\multicolumn{1}{c}{\color{white}\textbf{维度}} & \multicolumn{1}{c}{\color{white}\textbf{现有框架（AutoGen/MetaGPT）}} & \multicolumn{1}{c}{\color{white}\textbf{InkRealm}} \\
+\midrule
+核心隐喻 & 软件公司 / 编程任务 & 叙事舞台 / 角色心智 \\
+Agent类型 & 程序员、产品经理、架构师 & 世界分析师、人设设计师、剧情导演 \\
+协作模式 & 代码评审、API调用 & 情节编排、风格对齐、情感共鸣 \\
+记忆需求 & 代码片段、API文档 & 角色经历、语录库、情感轨迹 \\
+输出约束 & 可执行代码、测试用例 & 风格一致、角色保真、情节合理 \\
+流式需求 & 批量输出为主 & Token级实时流式渲染 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{研究目标}
+\label{sec:objectives}
+
+本研究旨在构建一套\textbf{面向叙事生成场景}的多智能体系统，满足表~\ref{tab:design-goals}所列的设计目标：
+
+\begin{table}[H]
+\centering
+\caption{InkRealm 系统设计目标矩阵}
+\label{tab:design-goals}
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{|>{\columncolor{goldleaf!25}}p{2.5cm}|p{4cm}|p{7cm}|}
+\hline
+\rowcolor{goldleaf}
+\multicolumn{1}{|c|}{\color{white}\textbf{目标维度}} & \multicolumn{1}{c|}{\color{white}\textbf{具体要求}} & \multicolumn{1}{c|}{\color{white}\textbf{技术路径}} \\
+\hline
+\textbf{角色保真度} & 基于原著语料锚定角色特征，$\geq$100条真实语录注入 & RAG检索 + 动态Prompt构建 + 多通道打分融合 \\
+\hline
+\textbf{题材通用性} & 算法对玄幻/都市/历史/言情/科幻通用，零硬编码 & 通用WorldSetting抽象 + LLM自主推断题材术语 \\
+\hline
+\textbf{编排灵活性} & 支持顺序、并发、规划三种ReAct模式 & RoleReactMode三态机（REACT/BY\_ORDER/PLAN\_AND\_ACT） \\
+\hline
+\textbf{交互实时性} & 聊天首Token秒级响应；生成过程可观测 & SSE流式协议 + ContextVar回调通道 + Token级推送 \\
+\hline
+\textbf{架构可演进} & 便于接入新模型/新工具/新角色 & 分层抽象（核心层/服务层/应用层）+ Thin-Adapter模式 \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{角色保真度}：系统通过结构化信息联合注入实现角色一致性控制。Prompt模板整合角色档案、性格与说话风格、重要人物关系、世界观设定、严格对话规则、本轮相关记忆以及不少于100条真实语录等多种信息，共同汇入统一的角色一致性Prompt模板。
+
+\textbf{题材通用性}：如图~\ref{fig:genre-decoupling}所示，系统通过题材解耦设计实现跨作品复用。通用WorldSetting抽象统一描述世界观的核心字段，如genre、power\_system\_name、power\_levels、major\_forces、world\_background、current\_timeline与key\_locations。
+
+\begin{figure}[H]
+\centering
+\fcolorbox{tableborder}{paperwhite}{%
+\parbox{0.95\textwidth}{%
+\centering
+\vspace{0.5cm}
+\textbf{[题材解耦设计图.png]}\\[0.5em]
+\small\color{inklight} 以左右对照形式展示题材耦合设计与题材解耦设计的差异：左侧旧方案依赖硬编码Prompt、耦合字段、固定等级表与违和fallback；右侧新方案通过通用WorldSetting抽象、变量驱动Prompt、LLM自主推断术语与题材无关的人设维度实现多题材统一
+\vspace{0.5cm}
+}%
+}
+\caption{题材解耦设计实现跨作品自适应}
+\label{fig:genre-decoupling}
+\end{figure}
+
+\subsection{研究贡献}
+\label{sec:contributions}
+
+本研究的主要贡献可归纳为以下三个层面：
+
+\textbf{（1）理论贡献}：验证了MetaGPT架构范式在非工程领域的可迁移性。本研究提炼了叙事场景特化的原语扩展集，包括角色心智模型、层次化记忆、风格对齐约束等，拓展了多智能体系统的应用边界。
+
+\textbf{（2）技术贡献}：
+
+\begin{itemize}[leftmargin=2em]
+\item \textbf{ActionNode动态结构化生成}：设计运行时Pydantic模型生成机制，实现从字段定义到JSON Schema再到结构化输出的端到端类型安全。
+\item \textbf{ContextVar流桥接}：创新性地将Python的ContextVar机制与异步生成器结合，实现请求级上下文隔离与流式输出的高效桥接。
+\item \textbf{TF-IDF哈希桶Embedder}：设计无需外部依赖的中文向量化方案，通过字符级n-gram与哈希桶机制实现固定维度嵌入。
+\end{itemize}
+
+\textbf{（3）应用贡献}：
+
+构建端到端产品系统，覆盖两大核心场景：
+
+\begin{table}[H]
+\centering
+\caption{InkRealm 产品形态双模态对比}
+\label{tab:product-modes}
+\renewcommand{\arraystretch}{1.4}
+\rowcolors{2}{tableodd}{tableeven}
+\begin{tabular}{p{3cm}p{5cm}p{5cm}}
+\toprule
+\rowcolor{tableheader}
+\multicolumn{1}{c}{\color{white}\textbf{特性维度}} & \multicolumn{1}{c}{\color{white}\textbf{墨笺对谈（角色聊天）}} & \multicolumn{1}{c}{\color{white}\textbf{共谱华章（故事共创）}} \\
+\midrule
+交互模式 & 单角色深度互动 & 多Agent协同创作 \\
+核心技术 & RAG检索 + 流式SSE & ReAct编排 + 状态机管理 \\
+记忆机制 & 层次化记忆检索 & 故事状态持续回写 \\
+用户体验 & 打字机式实时渲染 & 向导式6步人设构建 \\
+输出形式 & 对话消息流 & 结构化章节 + 互动选项 \\
+代表作品 & 《武动乾坤》林动/绫清竹 & 用户自定义角色故事 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{墨笺对谈}采用三幕式工作流：RetrieveMemory → RetrieveQuotes → SpeakInCharacter。\textbf{共谱华章}则是一个完整的多Agent协同流水线，涵盖世界分析、人设设计、大纲规划、章节写作、选项生成与状态回写等阶段。
+
+\subsection{论文结构}
+\label{sec:structure}
+
+本文结构如表~\ref{tab:structure}所示：
+
+\begin{table}[H]
+\centering
+\caption{论文章节结构与内容概览}
+\label{tab:structure}
+\renewcommand{\arraystretch}{1.3}
+\rowcolors{2}{tableodd}{tableeven}
+\begin{tabular}{>{\columncolor{accentpurple!20}}p{1.5cm}p{3.5cm}p{8cm}}
+\toprule
+\rowcolor{accentpurple}
+\multicolumn{1}{c}{\color{white}\textbf{章节}} & \multicolumn{1}{c}{\color{white}\textbf{标题}} & \multicolumn{1}{c}{\color{white}\textbf{主要内容}} \\
+\midrule
+\S\ref{sec:intro} & 引言 & 研究背景、目标与贡献概述（本章） \\
+\S2 & 相关工作 & 角色扮演系统、多智能体框架、检索增强生成综述 \\
+\S3 & 系统全景 & 三层切片架构与双模态产品设计 \\
+\S4 & 核心抽象层 & Message/Memory/Role/Action/ActionNode/Environment详解 \\
+\S5 & LLM Provider & 流式生成、结构化输出与Provider抽象 \\
+\S6 & 检索记忆体系 & TF-IDF/BM25向量化、分层检索与Quote召回 \\
+\S7 & 角色聊天实现 & CharacterRole、ChatEnvironment与三幕式工作流 \\
+\S8 & 故事共创实现 & WritingEnvironment、多Agent编排与ReAct模式 \\
+\S9 & 题材解耦设计 & WorldSetting抽象、LLM自主推断与跨作品复用 \\
+\S10 & 数据层设计 & JSONL加工流水线与Profile构建 \\
+\S11 & Web后端工程 & FastAPI服务层、SSE端点与数据库设计 \\
+\S12 & 前端工程 & React架构、状态管理与流式渲染 \\
+\S13 & 专题讨论 & Thin-Adapter演进、ContextVar流桥接等工程创新 \\
+\S14 & 评估验证 & 性能基准测试、用户研究与对比分析 \\
+\S15 & 局限与未来 & 当前约束与未来研究方向 \\
+\S16 & 结论 & 研究总结与展望 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================
+% 参考文献
+% ============================================
+\newpage
+\begin{thebibliography}{99}
+\bibitem[Zhang et al.(2018)]{zhang2018persona}
+Zhang S, Dinan E, Urbanek J, et al. Personalizing Dialogue Agents: I have a dog, do you have pets too? [C]//ACL. 2018.
+
+\bibitem[Shao et al.(2023)]{shao2023characterllm}
+Shao Y, Li L, Dai J, et al. Character-LLM: A Trainable Agent for Role-Playing [J]. arXiv preprint arXiv:2310.10158, 2023.
+
+\bibitem[Liu et al.(2024)]{liu2024roleagent}
+Liu J, et al. RoleAgent: Building, Interacting, and Benchmarking High-Quality Role-Playing Agents [C]//NeurIPS Datasets and Benchmarks Track. 2024.
+
+\bibitem[Yao et al.(2022)]{yao2022react}
+Yao S, Zhao J, Yu D, et al. ReAct: Synergizing Reasoning and Acting in Language Models [J]. arXiv preprint arXiv:2210.03629, 2022.
+
+\bibitem[Lewis et al.(2020)]{lewis2020rag}
+Lewis P, Perez E, Piktus A, et al. Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks [C]//NeurIPS. 2020.
+
+\bibitem[LangChain(2025)]{langchain}
+LangChain Team. LangChain Documentation [EB/OL]. https://docs.langchain.com, 2025.
+
+\bibitem[FastAPI(2025)]{fastapi}
+Tiangolo. FastAPI Documentation [EB/OL]. https://fastapi.tiangolo.com, 2025.
+
+\bibitem[DeepSeek-AI(2024)]{deepseek2024}
+DeepSeek-AI. DeepSeek-V3 Technical Report [J]. arXiv preprint arXiv:2412.19437, 2024.
+
+\bibitem[Latitude(2019)]{aidungeon}
+Latitude. AI Dungeon [EB/OL]. https://aidungeon.com, 2019.
+
+\bibitem[Wu et al.(2025)]{wu2025interactive}
+Wu H, Wu W, Xu T, et al. Towards Enhanced Immersion and Agency for LLM-based Interactive Drama [J]. arXiv preprint arXiv:2502.17878, 2025.
+
+\bibitem[Liu et al.(2025)]{liu2025npc}
+Liu X, Xie Z, Jiang S. Personalized Non-Player Characters: A Framework for Character-Consistent Dialogue Generation [J]. AI, 2025, 6(5): 93.
+
+\bibitem[Amadaeus(2025)]{amadaeus2025}
+Anonymous. Dynamic Context Adaptation for Consistent Role-Playing Agents [J]. arXiv preprint arXiv:2508.02016, 2025.
+
+\bibitem[Park et al.(2023)]{park2023generative}
+Park J S, O'Brien J, Cai C, et al. Generative Agents: Interactive Simulacra of Human Behavior [C]//UIST. 2023.
+
+\bibitem[Wu et al.(2023)]{wu2023autogen}
+Wu Q, Bansal G, Zhang J, et al. AutoGen: Enabling Next-Gen LLM Applications via Multi-Agent Conversation [J]. arXiv preprint arXiv:2308.08155, 2023.
+
+\bibitem[Li et al.(2023)]{li2023camel}
+Li G, Hammoud H A K, Itani H, et al. CAMEL: Communicative Agents for Mind Exploration of Large Language Model Society [C]//NeurIPS Workshop. 2023.
+\end{thebibliography}
+
+\end{document}

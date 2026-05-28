@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod +x *)",
+      "Bash(python3 -m py_compile app/__init__.py app/config.py app/database.py app/main.py app/models/*.py app/schemas/*.py app/api/*.py app/services/__init__.py app/services/novel_service.py app/services/character_service.py app/services/chat_service.py app/services/story_service.py)",
+      "Bash(python3 -m py_compile app/services/character_service.py app/services/story_service.py app/services/novel_service.py app/services/chat_service.py)",
+      "Bash(python3 -m py_compile app/main.py)",
+      "Bash(python3 *)",
+      "Bash(echo \"started, pid=$!\")",
+      "Bash(curl -s http://127.0.0.1:8765/api/v1/health)",
+      "Bash(curl -s http://127.0.0.1:8765/api/v1/novels)",
+      "Bash(curl -s http://127.0.0.1:8765/api/v1/novels/1)",
+      "Bash(curl -s http://127.0.0.1:8765/api/v1/characters/1)",
+      "Bash(curl -s --max-time 120 \"http://127.0.0.1:8765/api/v1/stories/persona-options/1/1\")",
+      "Bash(pkill -f \"uvicorn app.main:app --host 127.0.0.1 --port 8765\")",
+      "Bash(python3 -m uvicorn app.main:app --host 127.0.0.1 --port 8765 --log-level warning)",
+      "Bash(time curl *)",
+      "Bash(time curl -s --max-time 180 -X POST http://127.0.0.1:8765/api/v1/stories -H 'Content-Type: application/json' -d '{ *)",
+      "Bash(curl -s http://127.0.0.1:8765/api/v1/stories/1)",
+      "Bash(rm -f data/inkrealm.db)",
+      "Bash(rm -f data/novels/*.jsonl)",
+      "Bash(rm -rf data/exports/*)",
+      "Bash(rm -rf data/stories/*)",
+      "Bash(rm -rf data/uploads/*)",
+      "Bash(curl -s http://127.0.0.1:8765/api/v1/novels/1/characters)",
+      "Bash(curl *)"
+    ]
+  }
+}

@@ -1,0 +1,7 @@
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+sqlalchemy==2.0.36
+pydantic==2.10.3
+python-multipart==0.0.20
+openai==1.59.4
+aiofiles==24.1.0

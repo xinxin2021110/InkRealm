@@ -1,0 +1,158 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+  }
+
+  body {
+    /* 宣纸纹理 — 由细噪点 + 暖色径向叠加 */
+    background-color: #F5F0E6;
+    background-image:
+      radial-gradient(ellipse at top left, rgba(212, 175, 55, 0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at bottom right, rgba(205, 92, 92, 0.06) 0%, transparent 60%),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='4'/><feColorMatrix values='0 0 0 0 0.24 0 0 0 0 0.16 0 0 0 0 0.08 0 0 0 0.05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+}
+
+@layer components {
+  /* —— 主按钮(浅墨/印章) —— */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-md
+           bg-ink text-rice font-title font-medium tracking-wider
+           shadow-scroll transition-all
+           hover:bg-ink-light hover:shadow-scroll-hover hover:-translate-y-0.5
+           active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-cinnabar {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-md
+           bg-cinnabar text-rice font-title font-medium tracking-wider
+           shadow-scroll transition-all
+           hover:bg-cinnabar-deep hover:shadow-scroll-hover hover:-translate-y-0.5
+           active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2 rounded-md
+           border border-ink/30 text-ink font-title bg-cream/40
+           transition-all hover:bg-cream hover:border-ink/50
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* —— 卡片(宣纸+暗角) —— */
+  .scroll-card {
+    @apply relative bg-cream rounded-md shadow-scroll border border-ink/10
+           transition-all hover:shadow-scroll-hover hover:-translate-y-1;
+  }
+
+  /* —— 印章 —— */
+  .seal {
+    @apply inline-flex items-center justify-center font-title font-bold
+           text-rice bg-cinnabar px-3 py-1 rounded-sm shadow-seal
+           tracking-widest;
+  }
+
+  /* —— 顶部金线分隔 —— */
+  .gold-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #D4AF37, transparent);
+  }
+
+  /* —— 卷轴消息(角色) —— */
+  .scroll-bubble {
+    position: relative;
+    background: linear-gradient(180deg, #FAF6F0 0%, #F2EAD8 100%);
+    border: 1px solid rgba(61, 41, 20, 0.15);
+    border-left: 3px solid #B0413E;
+    padding: 14px 20px;
+    border-radius: 4px;
+    box-shadow: 0 6px 20px -8px rgba(61, 41, 20, 0.3);
+    line-height: 1.85;
+  }
+  .scroll-bubble::before,
+  .scroll-bubble::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 5px;
+    background: linear-gradient(180deg, #8B4513 0%, #5C2E0B 50%, #8B4513 100%);
+    border-radius: 2px;
+  }
+  .scroll-bubble::before { left: -8px; }
+  .scroll-bubble::after  { right: -8px; }
+
+  /* —— 简牍消息(用户) —— */
+  .bamboo-bubble {
+    position: relative;
+    background: linear-gradient(180deg, #EFD9C4 0%, #E8D4C4 100%);
+    border: 1px solid rgba(139, 69, 19, 0.25);
+    padding: 12px 18px;
+    border-radius: 4px;
+    box-shadow: 0 4px 14px -6px rgba(61, 41, 20, 0.25);
+    line-height: 1.75;
+  }
+  .bamboo-bubble::before {
+    content: '';
+    position: absolute; top: 8px; bottom: 8px; left: 4px;
+    width: 1px;
+    background: rgba(139, 69, 19, 0.25);
+  }
+  .bamboo-bubble::after {
+    content: '';
+    position: absolute; top: 8px; bottom: 8px; right: 4px;
+    width: 1px;
+    background: rgba(139, 69, 19, 0.25);
+  }
+
+  /* —— 古籍内容容器 —— */
+  .ancient-page {
+    background:
+      linear-gradient(rgba(245,240,230,0.4), rgba(245,240,230,0.4)),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='2' seed='9'/><feColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.22 0 0 0 0 0.10 0 0 0 0.06 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    background-color: #F8EFD9;
+    border: 1px solid rgba(61, 41, 20, 0.18);
+    box-shadow: inset 0 0 60px rgba(61,41,20,0.08), 0 8px 30px -12px rgba(61,41,20,0.25);
+  }
+
+  /* 选项按钮 */
+  .choice-card {
+    @apply relative w-full text-left p-5 rounded-md border-2 border-ink/15
+           bg-cream/70 hover:bg-cream hover:border-cinnabar
+           transition-all duration-200 cursor-pointer
+           shadow-sm hover:shadow-scroll;
+  }
+  .choice-letter {
+    @apply absolute -left-3 -top-3 w-9 h-9 rounded-full
+           bg-cinnabar text-rice font-title font-bold flex items-center justify-center
+           shadow-seal text-lg;
+  }
+
+  /* 输入框(竹简) */
+  .bamboo-input {
+    @apply w-full px-4 py-3 rounded-md
+           bg-gradient-to-b from-cream to-[#EFE3CC]
+           border border-ink/25 text-ink
+           focus:outline-none focus:ring-2 focus:ring-cinnabar/40 focus:border-cinnabar
+           placeholder:text-ink-light/60 transition;
+  }
+
+  /* 章节阅读正文 */
+  .chapter-prose {
+    font-family: 'Noto Serif SC', serif;
+    color: #2c1d0e;
+    line-height: 2;
+    font-size: 1.05rem;
+    text-align: justify;
+  }
+  .chapter-prose p {
+    text-indent: 2em;
+    margin-bottom: 0.85em;
+  }
+}
+
+/* 滚动条 */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: rgba(245,240,230,0.4); }
+::-webkit-scrollbar-thumb { background: rgba(139, 69, 19, 0.3); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(139, 69, 19, 0.5); }
