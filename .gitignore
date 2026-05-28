@@ -6,6 +6,8 @@ __pycache__/
 .venv/
 venv/
 env/
+node_modules/
+webapp/frontend/node_modules/
 .idea/
 .vscode/
 *.log
